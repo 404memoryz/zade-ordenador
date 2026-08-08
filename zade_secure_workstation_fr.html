@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zade // Secure Workstation</title>
+<style>
+:root{
+  --bg:#070b12; --panel:#0d1420; --panel2:#111b2b; --border:#2a3a52;
+  --text:#dbeafe; --muted:#718096; --accent:#63b3ed; --green:#86efac;
+  --amber:#fbbf24; --red:#f87171;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#02050a;color:var(--text);font-family:Consolas,Monaco,monospace;min-height:100vh}
+button,input,textarea{font:inherit}
+.desktop{
+  min-height:100vh; padding:22px; position:relative; overflow:hidden;
+  background:radial-gradient(circle at 20% 10%,#16264b 0,#0a0f19 35%,#03060b 75%);
+}
+.topbar{
+  height:38px;border-bottom:1px solid var(--border);display:flex;
+  align-items:center;justify-content:space-between;color:#93a4bd;font-size:12px
+}
+.desktop-icons{display:grid;grid-template-columns:repeat(auto-fill,100px);gap:22px;margin-top:30px}
+.icon{
+  background:none;border:0;color:#cbd5e1;padding:12px;border-radius:10px;
+  cursor:pointer;text-align:center
+}
+.icon:hover{background:#ffffff0b}
+.icon .emoji{display:block;font-size:34px;margin-bottom:8px}
+.icon small{font-size:10px}
+.dock{
+  position:absolute;bottom:14px;left:20px;right:20px;height:42px;border:1px solid #263449;
+  border-radius:12px;background:#050912dd;display:flex;align-items:center;
+  justify-content:space-between;padding:0 14px;color:#56657a;font-size:10px
+}
+.window{
+  display:none;position:absolute;z-index:10;left:5%;right:5%;top:9%;bottom:9%;
+  background:#080d15;border:1px solid #3a4d68;border-radius:13px;
+  box-shadow:0 25px 80px #000c;overflow:hidden
+}
+.window-head{
+  height:40px;background:#101827;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:12px
+}
+.close{border:0;background:none;color:#94a3b8;cursor:pointer;font-size:16px}
+.content{height:calc(100% - 40px);overflow:auto;padding:18px}
+.muted{color:var(--muted);font-size:10px}
+.line{padding:8px 0;border-bottom:1px solid #172338}
+.card{
+  border:1px solid var(--border);border-radius:9px;padding:12px;margin:9px 0;background:#0b121d
+}
+.clickable{cursor:pointer}.clickable:hover{background:#111c2d}
+.badge{font-size:9px;border:1px solid #40516a;border-radius:99px;padding:3px 7px;margin-left:5px}
+.green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{
+  border:1px solid #465a75;background:#142033;color:#dbeafe;border-radius:7px;
+  padding:8px 10px;cursor:pointer;font-size:10px;margin:5px 5px 0 0
+}
+.btn:hover{background:#1b2a42}
+textarea,input.search,input.cmdinput{
+  background:#030711;color:#dbeafe;border:1px solid #33465f;border-radius:7px;padding:9px;
+  width:100%;outline:none
+}
+.terminal{
+  background:#02050a;border:1px solid #23334a;border-radius:9px;padding:13px;
+  color:#a7f3d0;white-space:pre-wrap;min-height:250px;font-size:11px
+}
+.cmdrow{display:flex;gap:7px;margin-top:8px}
+.cmdrow .cmdinput{flex:1}.cmdrow .btn{margin:0}
+.note-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:700px){
+  .window{left:2%;right:2%;top:5%;bottom:5%}
+  .grid2,.note-columns{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="desktop">
+  <div class="topbar">
+    <span>Z-SHELL SECURE WORKSTATION</span>
+    <span>VPN ACTIVE · LOCAL NODE · 02:17</span>
+  </div>
+
+  <div class="desktop-icons">
+    <button class="icon" data-app="mail"><span class="emoji">📧</span><small>MESSAGERIE SÉCURISÉE</small></button>
+    <button class="icon" data-app="soc"><span class="emoji">🛡️</span><small>PANNEAU SOC</small></button>
+    <button class="icon" data-app="terminal"><span class="emoji">⌨️</span><small>TERMINAL</small></button>
+    <button class="icon" data-app="logs"><span class="emoji">📡</span><small>JOURNAUX D’ÉVÉNEMENTS</small></button>
+    <button class="icon" data-app="files"><span class="emoji">🔐</span><small>DOSSIERS D’ENQUÊTE</small></button>
+    <button class="icon" data-app="notes"><span class="emoji">📝</span><small>NOTES</small></button>
+    <button class="icon" data-app="browser"><span class="emoji">🌐</span><small>NAVIGATEUR</small></button>
+    <button class="icon" data-app="trash"><span class="emoji">🗑️</span><small>CORBEILLE</small></button>
+  </div>
+
+  <div class="dock">
+    <span>SESSION CHIFFRÉE</span>
+    <span>POSTE : SÉCURISÉ · STOCKAGE : 61%</span>
+  </div>
+
+  <section class="window" id="window">
+    <div class="window-head">
+      <span id="windowTitle">Application</span>
+      <button class="close" id="close">✕</button>
+    </div>
+    <div class="content" id="content"></div>
+  </section>
+</div>
+
+<script>
+const win=document.getElementById("window");
+const title=document.getElementById("windowTitle");
+const content=document.getElementById("content");
+
+function openApp(app){
+  win.style.display="block";
+
+  if(app==="mail"){
+    title.textContent="MESSAGERIE SÉCURISÉE";
+    content.innerHTML=`
+      <div class="muted">BOÎTE DE RÉCEPTION · 3 NON LUS · RELAIS CHIFFRÉ</div>
+      <div class="card clickable" id="mysteryMail">
+        <b>EXPÉDITEUR INCONNU</b>
+        <div class="muted">02:16 · aucune signature · aucune pièce jointe</div>
+        <p>Tu veux que les gens de ton nouveau travail sachent ce que tu fais ?</p>
+      </div>
+      <div class="card"><b>RH / PLANNING AOÛT </b><div class="muted">Hier</div><p>Bonjour Zade, je vous joins un PDF avec votre planning du mois. Vous y trouverez également vos tâches.</p></div>
+      <div class="card"><b>SECURITY ALERT</b><div class="muted">Hier</div><p>Notification d’authentification habituelle.</p></div>
+      <div class="card"><b>IT SUPPORT / MATÉRIEL</b><div class="muted">Aujourd’hui · 09:42</div>
+        <p>Bonjour Zade, ton nouveau poste informatique est prêt. Merci de passer au service IT avant vendredi pour récupérer ton matériel.</p>
+      </div>
+      <div class="card"><b>Hora de comer</b><div class="muted">Aujourd’hui · 12:18</div>
+        <p>oye, comes con nosotros entonces? si al final vienes, reservo mesa. Dime a que hora terminas.</p>
+      </div>
+    `;
+    document.getElementById("mysteryMail").onclick=()=>{
+      content.innerHTML=`
+        <div class="muted">MESSAGE / EXPÉDITEUR INCONNU</div>
+        <h3>Tu veux que les gens de ton nouveau travail sachent ce que tu fais ?</h3>
+        <div class="line">Origine : <span class="amber">MASQUÉE</span></div>
+        <div class="line">Chaîne de relais : <span class="amber">3 NODES</span></div>
+        <div class="line">Signature : <span class="red">INTROUVABLE</span></div>
+        <div class="line">Métadonnées : <span class="green">PARTIELLEMENT SUPPRIMÉES</span></div>
+        <div class="line">Reçu : 02:16:04</div>
+        <button class="btn" id="meta">ANALYSER LES MÉTADONNÉES</button>
+        <button class="btn" id="reply">RÉPONDRE</button>
+        <button class="btn" id="related">OUVRIR LES JOURNAUX ASSOCIÉS</button>
+      `;
+      document.getElementById("meta").onclick=()=>{
+        content.innerHTML+=`<div class="card amber">
+          Metadata anomaly: one relay timestamp differs by 47 seconds.
+          Certains éléments permettant d’identifier l’expéditeur ont été volontairement supprimés avant l’envoi.
+        </div>`;
+      };
+      document.getElementById("reply").onclick=()=>{
+        content.innerHTML+=`
+          <textarea rows="5" placeholder="Écris la réponse de Zade..."></textarea>
+          <button class="btn">ENVOYER</button>`;
+      };
+      document.getElementById("related").onclick=()=>openApp("logs");
+    };
+  }
+
+  else if(app==="soc"){
+    title.textContent="PANNEAU SOC";
+    content.innerHTML=`
+      <div class="grid2">
+        <div class="card"><div class="muted">SYSTÈME</div><p class="green">● NORMAL</p>
+          <div>Pare-feu : ACTIF</div><div>Poste : SÉCURISÉ</div><div>VPN: ACTIVE</div></div>
+        <div class="card"><div class="muted">FILE D’ALERTES</div><p class="amber">1 non résolue</p>
+          <div>MAIL-ANOMALY · 02:16</div><div>Gravité : MOYENNE</div></div>
+      </div>
+      <div class="card"><div class="muted">DOSSIER ATTRIBUÉ</div><h3>CASE-0417</h3>
+        <div>Menace personnelle / exposition d’informations</div>
+        <div class="line">Analyste : Zade</div><div class="line">Statut : OUVERT</div>
+      </div>`;
+  }
+
+  else if(app==="terminal"){
+    title.textContent="Z-SHELL";
+    content.innerHTML=`
+      <div class="terminal" id="out">Z-SHELL 4.2 — environnement médico-légal fictif
+Session authentifiée.
+Tape « help » pour voir les commandes disponibles.
+
+$ </div>
+      <div class="cmdrow"><input class="cmdinput" id="cmd" placeholder="command"><button class="btn" id="run">EXÉCUTER</button></div>`;
+    const out=document.getElementById("out"), input=document.getElementById("cmd");
+    function run(){
+      const q=input.value.trim().toLowerCase();
+      const answers={
+        help:"help · status · logs · case · notes · whoami",
+        status:"VPN ACTIVE | endpoint clean | alerts: 1",
+        logs:"02:16 MAIL-ANOMALY\n01:43 FILE-ACCESS CASE-0417\n00:58 UNKNOWN METADATA",
+        case:"CASE-0417 — sender knows information about upcoming employment.",
+        notes:"Try checking PRIVATE NOTES.",
+        whoami:"ZADE / SECURITY ANALYST / INTERNAL CLEARANCE"
+      };
+      out.textContent+="\\n$ "+q+"\\n"+(answers[q]||"commande inconnue")+"\\n\\n$ ";
+      input.value=""; input.focus();
+    }
+    document.getElementById("run").onclick=run;
+    input.addEventListener("keydown",e=>{if(e.key==="Enter")run()});
+  }
+
+  else if(app==="logs"){
+    title.textContent="JOURNAUX D’ÉVÉNEMENTS";
+    content.innerHTML=`
+      <div class="line">02:16:04 <span class="amber">MAIL-ANOMALY</span> — message externe chiffré</div>
+      <div class="line">02:11:37 <span class="green">AUTH-OK</span> — poste local</div>
+      <div class="line">01:43:22 <span class="amber">FILE-ACCESS</span> — CASE-0417</div>
+      <div class="line">01:39:08 <span class="green">VPN-ROTATE</span> — routine</div>
+      <div class="line">00:58:51 <span class="red">UNKNOWN</span> — anomalie de métadonnées</div>`;
+  }
+
+  else if(app==="files"){
+    title.textContent="DOSSIERS D’ENQUÊTE";
+    content.innerHTML=`
+      <div class="card clickable" id="case"><b>🔒 CASE-0417</b><div class="muted">Menace personnelle / accès restreint</div></div>
+      <div class="card clickable" id="job"><b>📄 NEW_EMPLOYMENT</b><div class="muted">Intégration / accès restreint</div></div>
+      <div class="card"><b>🗃️ ARCHIVE_2025</b><div class="muted">Archive chiffrée</div></div>`;
+    document.getElementById("case").onclick=()=>{
+      content.innerHTML=`<h3>CASE-0417</h3>
+        <div class="card">ERREUR.</div>
+        <div class="line">Last analyst note: check personal notes.</div>`;
+    };
+    document.getElementById("job").onclick=()=>{
+      content.innerHTML=`<h3>NEW_EMPLOYMENT</h3>
+        <div class="line">Date de début : CLASSIFIÉE</div>
+        <div class="line">Niveau d’accès : STANDARD</div>
+        <div class="line amber">Un dossier d’intégration a été consulté plus tôt que prévu.</div>`;
+    };
+  }
+
+  else if(app==="notes"){
+    title.textContent="Z-NOTES";
+    content.innerHTML=`
+      <div class="note-columns">
+        <div>
+          <div class="card"><b>☑ TÂCHES</b>
+            <p>□ Relire le rapport de sécurité du jour<br>□ Préparer la réunion de lundi<br>□ Mettre à jour les mots de passe — équipe 1<br>□ Organiser les fichiers<br>□ Acheter de la nourriture pour Ceniza<br>□ Faire une copie chiffrée des fichiers importants</p></div>
+          <div class="card"><b>🛒 LISTE DE COURSES</b>
+            <p>Lait · œufs · pâtes · poulet · Monster · cigarettes · yogurt de coco · algo dulce por dios · comida para Ceniza · lessive · papier toilette</p></div>
+          <div class="card"><b>💻 SETUP / PC</b>
+            <p>Clavier mécanique · deuxième écran · SSD externe · hub USB-C · webcam modo xocas· support pour casque · lampe de bureau chaude</p></div>
+          <div class="card"><b>📍 ENDROITS</b>
+            <p>Restaurant à tester · cinéma · la tienda de tecno que vi con la moto · paseo por el rio de casa · escapade de week-end · museo de la ciencia ciudad</p></div>
+        </div>
+        <div>
+          <div class="card"><b> Para este individuo ❤️</b>
+            <p>Algo tipo matching que seguro le gusta · un Maxibon · algo de su juego fav si encuentro · algo matching de spiderman porque me gusta y punto · comidita en casa (mirar que puedo hacer) · préparer une surprise pour sa prochaine nuit ici</p></div>
+          <div class="card"><b>✨ Lo veo y lo quiero </b>
+            <p>Mettre à niveau le PC!!! · vêtements d’été · ahorrar un poco para tunear la moto · bons écouteurs tambien modo xocas o los earplugs· silla gamer comoda · refaire la déco du bureau</p></div>
+          <div class="card clickable" id="private"><b>🔒 PRIVÉES</b>
+            <p>Ne jamais réutiliser les mots de passe.<br>Séparer identité personnelle et identité professionnelle.<br>Vérifier les informations publiques me concernant.<br><span class="amber">CASE-0417 — ne pas ouvrir depuis un appareil externe.</span></p></div>
+        </div>
+      </div>`;
+    document.getElementById("private").onclick=()=>{
+      content.innerHTML=`<h3>PRIVATE NOTE</h3>
+        <div class="card">L’affaire n’a pas commencé avec l’e-mail. Faire une analyse approfondie.</div>
+        <div class="card">Quelqu’un observait depuis un moment des informations auxquelles il ne devait pas avoir accès. Vérifier les employés et les badges.</div>
+        <div class="card amber">Chercher quelles entités ont pu me suivre.</div>
+        <div class="muted">[NOTA: revisar JOURNAUX D’ÉVÉNEMENTS]</div>`;
+    };
+  }
+
+  else if(app==="browser"){
+    title.textContent="NAVIGATEUR";
+    content.innerHTML=`
+      <div class="card"><div class="muted">FICTIONAL SEARCH</div>
+      <input class="search" id="search" placeholder="Buscar...">
+      <p id="result" class="muted">No recent searches.</p></div>`;
+    document.getElementById("search").addEventListener("keydown",e=>{
+      if(e.key==="Enter") document.getElementById("result").textContent=
+        "No public results. Some indexed pages appear to have been removed recently.";
+    });
+  }
+
+  else if(app==="trash"){
+    title.textContent="CORBEILLE";
+    content.innerHTML=`<div class="muted">Papelera vacía.</div>`;
+  }
+}
+
+document.querySelectorAll("[data-app]").forEach(b=>b.addEventListener("click",()=>openApp(b.dataset.app)));
+document.getElementById("close").onclick=()=>win.style.display="none";
+</script>
+</body>
+</html>
