@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zade // Secure Workstation</title>
 <style>
+
 :root{
   --bg:#070b12; --panel:#0d1420; --panel2:#111b2b; --border:#2a3a52;
   --text:#dbeafe; --muted:#718096; --accent:#63b3ed; --green:#86efac;
@@ -17,6 +18,14 @@ button,input,textarea{font:inherit}
   min-height:100vh; padding:22px; position:relative; overflow:hidden;
   background:radial-gradient(circle at 20% 10%,#16264b 0,#0a0f19 35%,#03060b 75%);
 }
+.desktop:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.16;background:repeating-linear-gradient(0deg,transparent 0 3px,#8ab4ff08 4px)}
+.desktop>*{position:relative;z-index:1}
+.boot-screen{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:radial-gradient(circle,#122642 0,#050912 58%,#020408 100%);transition:opacity .5s,visibility .5s}
+.boot-screen:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 4px,#64ffcf08 5px)}
+.boot-card{position:relative;z-index:1;width:min(480px,90vw);padding:30px;border:1px solid #315577;border-radius:14px;background:#08111deF;box-shadow:0 0 55px #38bdf833;text-align:center}
+.boot-logo{font-size:38px;color:var(--green);text-shadow:0 0 22px #86efac88;letter-spacing:.18em}
+.boot-progress{height:8px;border-radius:8px;background:#19273a;overflow:hidden;margin:20px 0 10px}.boot-progress span{display:block;width:0;height:100%;background:linear-gradient(90deg,#63b3ed,#86efac);transition:width .25s}
+.boot-screen.done{opacity:0;visibility:hidden;pointer-events:none}
 .topbar{
   height:38px;border-bottom:1px solid var(--border);display:flex;
   align-items:center;justify-content:space-between;color:#93a4bd;font-size:12px
@@ -27,6 +36,8 @@ button,input,textarea{font:inherit}
   cursor:pointer;text-align:center
 }
 .icon:hover{background:#ffffff0b}
+.icon{transition:transform .16s,background .16s}.icon:hover{transform:translateY(-3px)}
+.icon:focus-visible,.btn:focus-visible,.close:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .icon .emoji{display:block;font-size:34px;margin-bottom:8px}
 .icon small{font-size:10px}
 .dock{
@@ -34,6 +45,9 @@ button,input,textarea{font:inherit}
   border-radius:12px;background:#050912dd;display:flex;align-items:center;
   justify-content:space-between;padding:0 14px;color:#56657a;font-size:10px
 }
+.dock button{border:1px solid #263449;border-radius:6px;background:#101a29;color:#a9bdd7;padding:5px 8px;cursor:pointer;font-size:10px}
+.toast{position:absolute;right:24px;bottom:70px;z-index:4;max-width:300px;padding:12px 14px;border:1px solid #3a526d;border-radius:9px;background:#101827;color:#cfe2fb;box-shadow:0 12px 35px #0009;font-size:11px;animation:pop .2s ease-out}
+@keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
 .window{
   display:none;position:absolute;z-index:10;left:5%;right:5%;top:9%;bottom:9%;
   background:#080d15;border:1px solid #3a4d68;border-radius:13px;
@@ -43,6 +57,8 @@ button,input,textarea{font:inherit}
   height:40px;background:#101827;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:12px
 }
+.window-head{cursor:grab;user-select:none}.window-head:active{cursor:grabbing}
+.window.opening{animation:windowIn .22s ease-out}@keyframes windowIn{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .close{border:0;background:none;color:#94a3b8;cursor:pointer;font-size:16px}
 .content{height:calc(100% - 40px);overflow:auto;padding:18px}
 .muted{color:var(--muted);font-size:10px}
@@ -70,17 +86,60 @@ textarea,input.search,input.cmdinput{
 .cmdrow{display:flex;gap:7px;margin-top:8px}
 .cmdrow .cmdinput{flex:1}.cmdrow .btn{margin:0}
 .note-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.command-hint{color:#8194ad;font-size:10px;margin-top:6px}
+.case-choice{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.progress{height:7px;background:#182337;border-radius:9px;overflow:hidden;margin:10px 0}.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#63b3ed,#86efac);transition:width .35s}
 @media(max-width:700px){
   .window{left:2%;right:2%;top:5%;bottom:5%}
   .grid2,.note-columns{grid-template-columns:1fr}
 }
+
+/* Escritorio: interfaz de estación de trabajo, con paneles de cristal y fondo profundo */
+body{font-family:"Segoe UI",Arial,sans-serif;background:#050813}
+.desktop{min-height:100vh;height:100vh;padding:0 26px 94px;isolation:isolate;background:radial-gradient(ellipse at 76% 28%,#17385b 0%,#101b37 30%,#090e20 64%,#050813 100%)}
+.desktop:before{content:"";position:absolute;z-index:0;width:min(66vw,790px);aspect-ratio:1;right:6%;top:8%;border-radius:50%;background:radial-gradient(circle at 38% 35%,#42d8e766 0 2%,#527aff4d 18%,#322a9f30 42%,transparent 69%);filter:blur(1px);pointer-events:none}
+.desktop:after{opacity:.08;background:linear-gradient(120deg,transparent 35%,#6ad9ff16 50%,transparent 66%),repeating-linear-gradient(0deg,transparent 0 4px,#8ab4ff08 5px)}
+.topbar{height:48px;margin:0 -26px;padding:0 28px;border-bottom:1px solid #c4d7ff1a;background:#08101dcc;backdrop-filter:blur(20px);color:#c9d7ed;font:12px "Segoe UI",Arial,sans-serif;letter-spacing:.03em}
+.desktop-icons{position:absolute;left:22px;top:70px;width:190px;display:grid;grid-template-columns:repeat(2,82px);grid-auto-rows:92px;gap:8px;margin:0}
+.icon{width:82px;height:88px;padding:8px 5px;color:#e5eeff;text-shadow:0 1px 5px #000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;border:1px solid transparent;border-radius:12px}
+.icon:hover{background:#d7e7ff16;border-color:#d7e7ff22;transform:translateY(-2px)}
+.icon .emoji{width:50px;height:50px;display:grid;place-items:center;margin:0;border:1px solid #ffffff24;border-radius:15px;background:linear-gradient(145deg,#ffffff2a,#ffffff08);box-shadow:0 8px 20px #0004;font-size:27px;text-shadow:none;backdrop-filter:blur(8px)}
+.icon small{max-width:80px;font:10px "Segoe UI",Arial,sans-serif;line-height:1.2;text-align:center;text-shadow:0 1px 4px #000}
+.desktop-widgets{position:absolute;right:34px;top:86px;width:min(290px,28vw);display:grid;gap:12px}
+.desktop-widgets section{border:1px solid #b9d4ff24;border-radius:18px;background:linear-gradient(145deg,#131f38cc,#0a1120c9);box-shadow:0 14px 38px #0003;backdrop-filter:blur(18px)}
+.widget-clock{padding:20px 22px}.widget-kicker{font-size:10px;letter-spacing:.15em;color:#9aafd0}.widget-time{font-size:48px;font-weight:300;letter-spacing:-.06em;color:#eff7ff;line-height:1.2;text-shadow:0 0 28px #7dc7ff55}.widget-sub{font-size:11px;color:#91a5c6}
+.widget-case{padding:18px 20px}.widget-case h2{margin:9px 0 5px;font-size:22px;letter-spacing:.08em;color:#eef4ff}.widget-case p{font-size:12px;line-height:1.55;color:#9eafcb;margin:0 0 14px}.alert-dot{display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;background:#ffbf5d;box-shadow:0 0 12px #ffbf5d;animation:pulse 1.2s infinite alternate}@keyframes pulse{to{opacity:.35}}
+.widget-action{width:100%;display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #7e9eff40;border-radius:10px;color:#dbe8ff;background:#768fff18;cursor:pointer;font-size:10px;letter-spacing:.08em}.widget-action:hover{background:#768fff30}
+.widget-status{display:flex;align-items:center;gap:12px;padding:14px 18px}.status-orb{width:37px;height:37px;display:grid;place-items:center;border-radius:12px;color:#baf9e5;background:linear-gradient(140deg,#18bdba55,#688bff55);font-size:20px}.widget-status b{display:block;font-size:11px;letter-spacing:.08em}.widget-status small{display:block;margin-top:3px;color:#8fa2c2;font-size:10px;line-height:1.4}
+.dock{position:absolute;left:50%;right:auto;bottom:18px;transform:translateX(-50%);height:65px;min-width:310px;justify-content:center;gap:9px;padding:8px 13px;border:1px solid #d9e7ff30;border-radius:20px;background:#10182bcc;box-shadow:0 12px 45px #0007;backdrop-filter:blur(24px)}
+.dock-app,.dock-help{width:44px;height:44px;border:1px solid #ffffff17;border-radius:13px;background:linear-gradient(145deg,#ffffff21,#ffffff08);font-size:21px;cursor:pointer;transition:transform .16s,background .16s}.dock-app:hover,.dock-help:hover{transform:translateY(-5px);background:#ffffff30}.dock-divider{height:33px;width:1px;background:#d9e7ff30;margin:0 3px}.dock .dock-help{font-size:16px;color:#dceaff;background:#537bce55}
+.window{left:50%;right:auto;top:50%;bottom:auto;width:min(850px,calc(100vw - 300px));height:min(650px,76vh);transform:translate(-50%,-50%);border:1px solid #b8d3ff38;border-radius:18px;background:#0a1020f2;box-shadow:0 30px 100px #0009,0 0 45px #4f76ff12;backdrop-filter:blur(24px)}
+.window-head{height:48px;padding:0 16px;background:#121c30;border-bottom:1px solid #b8d3ff1c;color:#dce9ff;font:12px "Segoe UI",Arial,sans-serif;letter-spacing:.04em}
+.close{width:27px;height:27px;border-radius:50%;background:#ff687522;color:#ffb0ad;font-size:14px}.close:hover{background:#ff687544}
+.content{height:calc(100% - 48px);padding:22px;color:#d9e6fa;font-family:"Segoe UI",Arial,sans-serif}
+.muted{color:#94a5c0;font-size:11px}.card{border-color:#a8c1e51e;border-radius:13px;background:linear-gradient(145deg,#111b2dcc,#0a1220dd);padding:15px}.line{border-color:#a8c1e514}.btn{border-color:#8ca9d334;border-radius:9px;background:#243756;color:#e1ecff;padding:9px 13px;font-size:11px;transition:background .15s,transform .15s}.btn:hover{background:#34517a;transform:translateY(-1px)}
+.terminal{font-family:Consolas,monospace;border-color:#7ef0bb24;border-radius:12px;background:#030811;color:#a7f3d0;box-shadow:inset 0 0 30px #16a5680c;line-height:1.7}.cmdrow input,.search,textarea{font-family:Consolas,monospace}
+.boot-card{border-color:#b9d4ff40;border-radius:22px;background:linear-gradient(145deg,#111f37f2,#090f1df2);box-shadow:0 25px 100px #0008,0 0 80px #38bdf822}.boot-logo{font-family:"Segoe UI",Arial,sans-serif;font-weight:700}
+@media(max-width:760px){.desktop{padding:0 14px 85px}.topbar{margin:0 -14px;padding:0 14px;font-size:10px}.desktop-icons{left:10px;top:62px;width:170px;grid-template-columns:repeat(2,72px);grid-auto-rows:80px;gap:3px}.icon{width:72px;height:78px}.icon .emoji{width:43px;height:43px;font-size:23px}.icon small{font-size:9px}.desktop-widgets{right:12px;top:74px;width:min(220px,calc(100vw - 200px));gap:8px}.widget-clock{padding:13px}.widget-time{font-size:34px}.widget-case{padding:14px}.widget-case h2{font-size:17px}.widget-status{display:none}.window{width:calc(100vw - 24px);height:78vh}.content{padding:14px}.dock{bottom:10px;height:58px;min-width:0;gap:6px}.dock-app,.dock-help{width:39px;height:39px;font-size:18px}}
+@media(max-width:480px){.desktop-widgets{top:auto;bottom:88px;left:14px;right:14px;width:auto}.widget-clock,.widget-status{display:none}.widget-case{padding:12px}.widget-case h2{margin:5px 0}.widget-case p{margin-bottom:8px}.desktop-icons{grid-auto-rows:72px}.icon{height:70px}.icon .emoji{width:38px;height:38px}.window{height:80vh}.topbar span:first-child{max-width:65%;font-size:9px}}
+
+
 </style>
 </head>
 <body>
+<div class="boot-screen" id="bootScreen">
+  <div class="boot-card">
+    <div class="boot-logo">ZADE</div>
+    <p class="muted"></p>
+    <div class="boot-progress"><span id="bootProgress"></span></div>
+    <div id="bootMessage" class="muted">En attente de l’analyste…</div>
+    <button class="btn" id="bootButton">OUVRIR LA SESSION</button>
+  </div>
+</div>
 <div class="desktop">
   <div class="topbar">
-    <span>Z-SHELL SECURE WORKSTATION</span>
-    <span>VPN ACTIVE · LOCAL NODE · 02:17</span>
+    <span>ZADE // POSTE DE TRAVAIL <span style="color:var(--green)">● SESSION SÉCURISÉE</span></span>
+    <span><span id="clock">00:00:00</span> · NŒUD LOCAL</span>
   </div>
 
   <div class="desktop-icons">
@@ -94,9 +153,21 @@ textarea,input.search,input.cmdinput{
     <button class="icon" data-app="trash"><span class="emoji">🗑️</span><small>CORBEILLE</small></button>
   </div>
 
+  <aside class="desktop-widgets">
+    <section class="widget-clock"><div class="widget-kicker">MARDI · POSTE DE ZADE</div><div class="widget-time" id="bigClock">00:00</div><div class="widget-sub">atelier 07 · canal sécurisé</div></section>
+    <section class="widget-case"><div class="widget-kicker"><span class="alert-dot"></span>ALERTE PRIORITAIRE</div><h2>CASE-0417</h2><p>Un message mystérieux attend dans la boîte de réception.</p><button class="widget-action" data-app="soc">OUVRIR LE DOSSIER <span>↗</span></button></section>
+    <section class="widget-status"><span class="status-orb">✦</span><div><b>NOCTURNE OS</b><small>Station de travail<br>Profil : Zade</small></div></section>
+  </aside>
+
   <div class="dock">
-    <span>SESSION CHIFFRÉE</span>
-    <span>POSTE : SÉCURISÉ · STOCKAGE : 61%</span>
+    <button class="dock-app" data-app="mail" title="Messagerie">📧</button>
+    <button class="dock-app" data-app="soc" title="Panneau SOC">🛡️</button>
+    <button class="dock-app" data-app="terminal" title="Terminal">⌨️</button>
+    <button class="dock-app" data-app="logs" title="Journaux">📡</button>
+    <span class="dock-divider"></span>
+    <button class="dock-app" data-app="files" title="Dossiers">🔐</button>
+    <button class="dock-app" data-app="notes" title="Notes">📝</button>
+    <button class="dock-help" id="helpButton" type="button">?</button>
   </div>
 
   <section class="window" id="window">
@@ -109,12 +180,14 @@ textarea,input.search,input.cmdinput{
 </div>
 
 <script>
+
 const win=document.getElementById("window");
 const title=document.getElementById("windowTitle");
 const content=document.getElementById("content");
 
 function openApp(app){
   win.style.display="block";
+  win.classList.remove("opening");void win.offsetWidth;win.classList.add("opening");
 
   if(app==="mail"){
     title.textContent="MESSAGERIE SÉCURISÉE";
@@ -154,9 +227,10 @@ function openApp(app){
         </div>`;
       };
       document.getElementById("reply").onclick=()=>{
-        content.innerHTML+=`
-          <textarea rows="5" placeholder="Écris la réponse de Zade..."></textarea>
-          <button class="btn">ENVOYER</button>`;
+        const replyBox=document.createElement("div");replyBox.className="card";
+        replyBox.innerHTML='<textarea rows="4" placeholder="Écris la réponse de Zade..."></textarea><div><button class="btn" id="sendFake">ENVOYER</button></div>';
+        content.appendChild(replyBox);
+        document.getElementById("sendFake").onclick=()=>{replyBox.innerHTML='<span class="green">Réponse archivée dans les éléments envoyés.</span>';toast("Message archivé.");};
       };
       document.getElementById("related").onclick=()=>openApp("logs");
     };
@@ -167,37 +241,57 @@ function openApp(app){
     content.innerHTML=`
       <div class="grid2">
         <div class="card"><div class="muted">SYSTÈME</div><p class="green">● NORMAL</p>
-          <div>Pare-feu : ACTIF</div><div>Poste : SÉCURISÉ</div><div>VPN: ACTIVE</div></div>
+          <div>Pare-feu : OPÉRATIONNEL</div><div>Poste : SÉCURISÉ</div><div>Canal interne : CHIFFRÉ</div></div>
         <div class="card"><div class="muted">FILE D’ALERTES</div><p class="amber">1 non résolue</p>
           <div>MAIL-ANOMALY · 02:16</div><div>Gravité : MOYENNE</div></div>
       </div>
       <div class="card"><div class="muted">DOSSIER ATTRIBUÉ</div><h3>CASE-0417</h3>
         <div>Menace personnelle / exposition d’informations</div>
         <div class="line">Analyste : Zade</div><div class="line">Statut : OUVERT</div>
+        <div class="card"><span class="amber">Indice à résoudre:</span> compare les heures du message et des journaux.</div>
+        <div class="case-choice"><button class="btn" id="reviewMail">RELIRE LE MAIL</button><button class="btn" id="reviewLogs">COMPARER LES JOURNAUX</button><button class="btn" id="resolveCase">CLÔTURER LE DOSSIER</button></div>
+        <div class="progress"><span id="caseProgress"></span></div>
       </div>`;
+    document.getElementById("reviewMail").onclick=()=>openApp("mail");
+    document.getElementById("reviewLogs").onclick=()=>openApp("logs");
+    document.getElementById("resolveCase").onclick=()=>{document.getElementById("caseProgress").style.width="100%";toast("Case-0417 clôturé. Bon travail, Zade.");};
   }
 
   else if(app==="terminal"){
     title.textContent="Z-SHELL";
     content.innerHTML=`
-      <div class="terminal" id="out">Z-SHELL 4.2 — environnement médico-légal fictif
-Session authentifiée.
+      <div class="terminal" id="out">NOCTURNE SHELL 4.2 — station de Zade
+Session ouverte · profil analyste chargé.
 Tape « help » pour voir les commandes disponibles.
 
 $ </div>
-      <div class="cmdrow"><input class="cmdinput" id="cmd" placeholder="command"><button class="btn" id="run">EXÉCUTER</button></div>`;
+      <div class="cmdrow"><input class="cmdinput" id="cmd" placeholder="help"><button class="btn" id="run">EXÉCUTER</button></div>
+      <div class="command-hint">Commandes: help · status · scan · logs · case · decrypt · clear</div>`;
     const out=document.getElementById("out"), input=document.getElementById("cmd");
     function run(){
       const q=input.value.trim().toLowerCase();
+      if(!q)return;
       const answers={
-        help:"help · status · logs · case · notes · whoami",
-        status:"VPN ACTIVE | endpoint clean | alerts: 1",
+        help:"help · status · scan · logs · case · decrypt · notes · clear",
+        status:"NODE: ATELIER-07 | FIREWALL: ACTIVE | ALERTES: 1 | CANAL: CHIFFRÉ",
+        scan:"POSTE: ATELIER-07\nSERVICES LOCAUX: 3 actifs\nANOMALIE: 1 événement lié à CASE-0417",
         logs:"02:16 MAIL-ANOMALY\n01:43 FILE-ACCESS CASE-0417\n00:58 UNKNOWN METADATA",
-        case:"CASE-0417 — sender knows information about upcoming employment.",
-        notes:"Try checking PRIVATE NOTES.",
-        whoami:"ZADE / SECURITY ANALYST / INTERNAL CLEARANCE"
+        case:"CASE-0417 — compare l'heure du message avec les journaux système.",
+        decrypt:"SG9sYSwgWmFkZSE= → Hola, Zade!",
+        notes:"Ouvre l'icône NOTES et consulte les notes privées de Zade.",
+        whoami:"ZADE / ANALYSTE SÉCURITÉ / ATELIER-07",
+        clear:"__CLEAR__"
       };
-      out.textContent+="\\n$ "+q+"\\n"+(answers[q]||"commande inconnue")+"\\n\\n$ ";
+      const result=answers[q]||"Commande inconnue. Tape help.";
+      if(q==="scan"){
+        out.textContent+="\n$ scan\nDémarrage du diagnostic du poste…\n";
+        const scanRow=document.createElement("div");scanRow.className="progress";scanRow.innerHTML="<span></span>";out.appendChild(scanRow);
+        const scanBar=scanRow.querySelector("span");let progress=0;
+        const timer=setInterval(()=>{progress+=20;scanBar.style.width=progress+"%";if(progress>=100){clearInterval(timer);out.append("\n3 services locaux vérifiés · 1 anomalie associée à CASE-0417\nDiagnostic terminé.\n\n$ ");out.scrollTop=out.scrollHeight;}},180);
+        input.value="";input.focus();out.scrollTop=out.scrollHeight;return;
+      }
+      if(result==="__CLEAR__")out.textContent="NOCTURNE SHELL 4.2 — station de Zade\nTerminal nettoyé. Tape « help » pour continuer.\n\n$ ";
+      else out.textContent+="\n$ "+q+"\n"+result+"\n\n$ ";
       input.value=""; input.focus();
     }
     document.getElementById("run").onclick=run;
@@ -249,9 +343,9 @@ $ </div>
         </div>
         <div>
           <div class="card"><b> Para este individuo ❤️</b>
-            <p>Algo tipo matching que seguro le gusta · un Maxibon · algo de su juego fav si encuentro · algo matching de spiderman porque me gusta y punto · comidita en casa (mirar que puedo hacer) · préparer une surprise pour sa prochaine nuit ici</p></div>
+            <p>Algo tipo matching que seguro le gusta · un Maxibon · algo de su juego fav si encuentro · algo matching de spiderman porque me gusta y punto · comidita en casa (mirar que puedo hacer) · pedirle de salir</p></div>
           <div class="card"><b>✨ Lo veo y lo quiero </b>
-            <p>Mettre à niveau le PC!!! · vêtements d’été · ahorrar un poco para tunear la moto · bons écouteurs tambien modo xocas o los earplugs· silla gamer comoda · refaire la déco du bureau</p></div>
+            <p>Mettre à niveau le PC!!! · la cesta de shein · ahorrar un poco para tunear la moto · bons écouteurs tambien modo xocas o los earplugs· silla gamer comoda · refaire la déco du bureau</p></div>
           <div class="card clickable" id="private"><b>🔒 PRIVÉES</b>
             <p>Ne jamais réutiliser les mots de passe.<br>Séparer identité personnelle et identité professionnelle.<br>Vérifier les informations publiques me concernant.<br><span class="amber">CASE-0417 — ne pas ouvrir depuis un appareil externe.</span></p></div>
         </div>
@@ -268,12 +362,12 @@ $ </div>
   else if(app==="browser"){
     title.textContent="NAVIGATEUR";
     content.innerHTML=`
-      <div class="card"><div class="muted">FICTIONAL SEARCH</div>
+      <div class="card"><div class="muted">INTRANET · FAVORIS DE ZADE</div>
       <input class="search" id="search" placeholder="Buscar...">
       <p id="result" class="muted">No recent searches.</p></div>`;
     document.getElementById("search").addEventListener("keydown",e=>{
       if(e.key==="Enter") document.getElementById("result").textContent=
-        "No public results. Some indexed pages appear to have been removed recently.";
+        "No matching file in the internal archive.";
     });
   }
 
@@ -285,6 +379,29 @@ $ </div>
 
 document.querySelectorAll("[data-app]").forEach(b=>b.addEventListener("click",()=>openApp(b.dataset.app)));
 document.getElementById("close").onclick=()=>win.style.display="none";
+function toast(message){
+  document.querySelector(".toast")?.remove();
+  const el=document.createElement("div");el.className="toast";el.setAttribute("role","status");el.textContent=message;
+  document.querySelector(".desktop").appendChild(el);setTimeout(()=>el.remove(),3200);
+}
+document.getElementById("helpButton").onclick=()=>toast("Clique ou double-clique une icône. Terminal: essaie help, scan, status ou clear.");
+document.getElementById("bootButton").onclick=()=>{
+  const progress=document.getElementById("bootProgress"),message=document.getElementById("bootMessage"),button=document.getElementById("bootButton");
+  button.disabled=true;button.textContent="OUVERTURE…";
+  const steps=[[25,"Chargement du profil analyste…"],[52,"Ouverture du dossier CASE-0417…"],[78,"Initialisation de la station…"],[100,"Session prête. Bienvenue, Zade."]];let i=0;
+  const timer=setInterval(()=>{const [value,label]=steps[i++];progress.style.width=value+"%";message.textContent=label;if(i===steps.length){clearInterval(timer);setTimeout(()=>document.getElementById("bootScreen").classList.add("done"),500);}},420);
+};
+function updateClock(){
+  const now=new Date();
+  document.getElementById("clock").textContent=now.toLocaleTimeString("fr-FR");
+  document.getElementById("bigClock").textContent=now.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+}
+updateClock();setInterval(updateClock,1000);
+document.querySelectorAll(".icon").forEach(icon=>icon.addEventListener("dblclick",()=>openApp(icon.dataset.app)));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")win.style.display="none";if(e.ctrlKey&&e.key.toLowerCase()==="k"){e.preventDefault();openApp("terminal");document.getElementById("cmd")?.focus();}});
+
+
+
 </script>
 </body>
 </html>
